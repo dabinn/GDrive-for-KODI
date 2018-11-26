@@ -2456,11 +2456,6 @@ class contentengine(object):
                             xbmcplugin.setResolvedUrl(self.plugin_handle, True, item)
 
 
-                            ## contribution by dabinn
-                            # handle situation where playback is skipped to next file, wait for new source to load
-                            if KODI and player.isPlaying():
-                                xbmc.sleep(100)
-
                             startPlayback = False
                             # need to seek?
                             if seek > 0:
@@ -2477,8 +2472,13 @@ class contentengine(object):
                             # must occur after playback started (resolve or startPlayback in player)
                             # load captions
                             if 0 and (settingsModule.srt or settingsModule.cc) and (service.protocol == 2 or service.protocol == 3):
-                                while not (KODI and player.isPlaying()):
-                                    xbmc.sleep(1000)
+                                # modified by dabinn
+                                # Subtitles need to be loaded after 'Creating InputStream' (Generally about 0.5~2 seconds after player.isPlaying(), various with videos)
+                                # player.isPlaying() is not very reliable in this situation, use player.playStatus instead
+                                maxWaitMSeconds=30*1000
+                                while KODI and not player.playStatus and maxWaitMSeconds > 0:
+                                    maxWaitMSeconds-=50
+                                    xbmc.sleep(50)
 
                                 files = cache.getSRT(service)
                                 for file in files:
@@ -2489,9 +2489,7 @@ class contentengine(object):
                                         except:
                                             file = str(file)
                                         player.setSubtitles(file)
-
-                            if KODI:
-                                xbmc.sleep(100)
+                                xbmc.log(self.addon.getAddonInfo('name')+': Subtitle loaded at seek time: ' + str(player.getTime()), xbmc.LOGNOTICE)
 
                             # we need to keep the plugin alive for as long as there is playback from the plugin, or the player object closes
                             while KODI and not player.isExit:
@@ -3083,12 +3081,6 @@ class contentengine(object):
                                 xbmcplugin.setResolvedUrl(self.plugin_handle, True, item)
 
 
-                    ## contribution by dabinn
-                    # handle situation where playback is skipped to next file, wait for new source to load
-                    if KODI and player.isPlaying():
-                        xbmc.sleep(100)
-
-
                     if KODI:
                         # need to seek?
                         if seek > 0:
@@ -3107,8 +3099,13 @@ class contentengine(object):
                     # must occur after playback started (resolve or startPlayback in player)
                     # load captions
                     if  (settingsModule.srt or settingsModule.cc) and  (service.protocol == 2 or service.protocol == 3):
-                        while KODI and not player.isPlaying():
-                            xbmc.sleep(1000)
+                        # modified by dabinn
+                        # Subtitles need to be loaded after 'Creating InputStream' (Generally about 0.5~2 seconds after player.isPlaying(), various with videos)
+                        # player.isPlaying() is not very reliable in this situation, use player.playStatus instead
+                        maxWaitMSeconds=30*1000
+                        while KODI and not player.playStatus and maxWaitMSeconds > 0:
+                            maxWaitMSeconds-=50
+                            xbmc.sleep(50)
 
                         files = cache.getSRT(service)
                         for file in files:
@@ -3119,9 +3116,7 @@ class contentengine(object):
                                 except:
                                     file = str(file)
                                 player.setSubtitles(file)
-
-                    if KODI:
-                        xbmc.sleep(100)
+                        xbmc.log(self.addon.getAddonInfo('name')+': Subtitle loaded at seek time: ' + str(player.getTime()), xbmc.LOGNOTICE)
 
                     # we need to keep the plugin alive for as long as there is playback from the plugin, or the player object closes
                     while KODI and not player.isExit:
